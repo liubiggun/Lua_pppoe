@@ -1,0 +1,62 @@
+#!/bin/ash
+
+path=/root/pppoe  # 脚本所在目录
+wan=eth0.2  # wan口对应的物理设备
+isp=3  # 1联通 2电信 3移动
+
+# 检测联网是否正常的函数
+check_online(){
+	cnt=0
+	ping -c2 114.114.114.119 > /dev/null 2>&1 && cnt=$(($cnt+1))
+	ping -c2 114.114.114.114 > /dev/null 2>&1 && cnt=$(($cnt+1))
+	ping -c2 114.114.114.110 > /dev/null 2>&1 && cnt=$(($cnt+1))
+	ping -c2 112.124.47.27 > /dev/null 2>&1 && cnt=$(($cnt+1))
+	ping -c2 114.215.126.16 > /dev/null 2>&1 && cnt=$(($cnt+1))
+	
+	if [ $cnt -gt 1 ];then
+		return 0
+	else
+		return 1
+	fi
+}
+
+mac=$(ifconfig $wan|grep 'HWaddr'|sed 's/^.*addr //g'|sed -r 's/ //g')
+ip=$(ifconfig $wan|grep 'inet addr'|sed -r 's/^.+addr://g'|cut -d" " -f1)
+
+ip1=$(echo ${ip}|cut -d"." -f1)
+ip2=$(echo ${ip}|cut -d"." -f2)
+ip3=$(echo ${ip}|cut -d"." -f3)
+ip4=$(echo ${ip}|cut -d"." -f4)
+
+while true;do
+	res=$($path/getperm.lua $ip1 $ip2 $ip3 $ip4 $mac $isp)  # 获取权限
+	# 获取失败，重新尝试直到成功
+	if [ $res = "fail" ];then
+		echo "$(date) error Now retry until succeed.." >> $path/log
+		while [ $res = "fail" ];do
+			sleep 3s
+			if [ -z $(ping -c2 202.193.160.123 > /dev/null 2>&1 && echo ok) ];then  # 不可以连接服务器则重启wan
+				ifup wan
+				sleep 5s
+			fi
+			res=$($path/getperm.lua $ip1 $ip2 $ip3 $ip4 $mac $isp)
+		done
+	fi
+
+	# 获取成功
+	echo "$(date) info Succeed to get permission!" >> $path/log
+	ifup pppoe
+	sleep 10s
+
+	# 开始循环检测上网情况
+	while check_online;do		
+		echo yes
+	done
+	
+	# 退出循环说明断网了
+	echo "$(date) error Offline!" >> $path/log
+
+done
+
+
+

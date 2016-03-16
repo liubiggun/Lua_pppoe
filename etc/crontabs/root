@@ -1,0 +1,5 @@
+0,1,11,21,31,41,51 * * * * /usr/bin/set_kernel_timezone >/dev/null 2>&1
+*/20 * * * * echo 3 > /proc/sys/vm/drop_caches
+
+# 清理日志
+0 0 1 * * echo "">/root/pppoe/log

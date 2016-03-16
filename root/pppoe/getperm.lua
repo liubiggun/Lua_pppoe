@@ -7,11 +7,6 @@ local ip1, ip2, ip3, ip4 = arg[1], arg[2], arg[3], arg[4]
 local mac = arg[5]
 local isp = arg[6]
 
---local ip1, ip2, ip3, ip4 = 172, 19, 54, 123
---local mac = "B2:68:B6:FF:C8:AD"
---local isp = 3
-
-
 --转换无符号32位整数为int32
 function u2i (uint)
 	local rs=uint
